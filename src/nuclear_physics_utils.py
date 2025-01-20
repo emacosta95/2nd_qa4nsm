@@ -5,6 +5,7 @@ from src.cg_utils import ClebschGordan, SelectCG
 import matplotlib.pyplot as plt
 from tqdm import trange,tqdm
 from src.fermi_hubbard_library import FemionicBasis
+from src.hamiltonian_utils import FermiHubbardHamiltonian
 import numpy as np
 from scipy.sparse.linalg import eigsh
 
@@ -439,3 +440,80 @@ def get_twobody_nuclearshell_model(file_name: str):
 
     return twobody_matrix, SPG.energies
 
+
+
+def write_j_square_twobody_file(filename:str):
+    
+    file=open(filename)
+
+    title=file.readline()
+    jsquare_title='J^2'+title
+
+    singleparticlestate_info=file.readline().strip().split()
+
+    singleparticlestate_number=int(singleparticlestate_info[1])
+
+    states=singleparticlestate_info[-singleparticlestate_number:]
+
+    double_j_states=[]
+
+    for state in states:
+        
+        double_j=int(state[-1])
+        double_j_states.append(double_j)
+        
+    fileJ2=open(filename+'_j2','w')
+    fileJ2.write('   J^2 ' + title )
+    fileJ2.write(' %i ' % singleparticlestate_number)
+    for a in range(singleparticlestate_number):
+        for b in range(singleparticlestate_number):
+            double_ja=double_j_states[a]
+            double_jb=double_j_states[b]
+            totalj=np.arange(np.abs(double_ja-double_jb),np.abs(double_ja+double_jb)+2,2)/2
+            fileJ2.write('%2i %2i %s %s %s %2s %i %i \n'  % (0, 1, states[a], states[b], states[a], states[b], totalj[0], totalj[-1]))
+            
+            print('J=',totalj)
+            for t in [0,1]:
+                for j in totalj:
+                    # is this a constrain (???)
+                    tpj = t + j
+                    if ( tpj % 2 == 0 and double_ja == double_jb ):
+                        j_square_value = 0
+                    else:
+                        j_square_value=j*(j+1)-double_ja*(double_ja/2+1)/2-double_jb*(double_jb/2+1)/2
+                    fileJ2.write(' %f '  %  j_square_value )
+                fileJ2.write('\n')
+            
+    fileJ2.close()
+      
+      
+class J2operator(FermiHubbardHamiltonian):
+    
+    def __init__(self, size_a, size_b, nparticles_a, nparticles_b, single_particle_states:List,j_square_filename:str,symmetries = None):
+        super().__init__(size_a, size_b, nparticles_a, nparticles_b, symmetries)
+        
+        
+        self.__get_single_particle_term(single_particle_states=single_particle_states)
+        self.__get_twobody_matrix(j_square_filename=j_square_filename)
+    
+    
+    def __get_single_particle_term(self,single_particle_states:List):
+        diag_j=np.zeros(len(single_particle_states))
+        label=[]
+        for i in range(diag_j.shape[0]):
+            n,l,j,m,_,tz=single_particle_states[i]
+            diag_j[i]=j*(j+1)
+            self.get_external_potential(diag_j)
+        
+    def __get_twobody_matrix(self,j_square_filename:str):
+        matrix_j,_=get_twobody_nuclearshell_model(file_name=j_square_filename)
+        self.get_twobody_interaction(twobody_dict=matrix_j)    
+        
+    def j2_operator(self):
+        return self.hamiltonian
+    
+    def j_value(self,psi:np.ndarray):
+        
+        j2=psi.transpose().dot(self.j2_operator.dot(psi))
+        jvalue=0.5 * ( np.sqrt(4.0 * j2 + 1) - 1 )
+        return jvalue

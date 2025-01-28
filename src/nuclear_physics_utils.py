@@ -31,8 +31,8 @@ class SingleParticleState:
         #self.energies_dictionary:Dict={}
         for i_z in [1 / 2, -1 / 2]:
             for i, label in enumerate(labels[2:]):
-                n = int(label[0])
-                l = int(label[1])
+                n = int(label[1])
+                l = int(label[0])
                 two_j = int(label[-1])
                 two_m_range = -1 * two_j + np.arange(0, 2 * two_j + 2, 2)
                 # we put the n=1 restriction
@@ -171,17 +171,20 @@ def scattering_matrix_reader(file_name: str) -> Tuple[Dict]:
         tot_iso_range = np.arange(int(matrix_info[i][0]), int(matrix_info[i][1]) + 1)
         # print('iso range=',tot_iso_range,'\n')
         tot_j_range = np.arange(int(matrix_info[i][-2]), int(matrix_info[i][-1]) + 1)
-        n1f = int(matrix_info[i][2][0])
-        n2f = int(matrix_info[i][3][0])
-        n1i = int(matrix_info[i][4][0])
-        n2i = int(matrix_info[i][5][0])
+        
+        # principal quantum number (radial quantum number)
+        n1f = int(matrix_info[i][2][1])
+        n2f = int(matrix_info[i][3][1])
+        n1i = int(matrix_info[i][4][1])
+        n2i = int(matrix_info[i][5][1])
 
-        l1f = int(matrix_info[i][2][1])
-        l2f = int(matrix_info[i][3][1])
-        l1i = int(matrix_info[i][4][1])
-        l2i = int(matrix_info[i][5][1])
+        # orbital angular momentum
+        l1f = int(matrix_info[i][2][0])
+        l2f = int(matrix_info[i][3][0])
+        l1i = int(matrix_info[i][4][0])
+        l2i = int(matrix_info[i][5][0])
 
-        # print('j range=',tot_j_range,'\n')
+        # total angular momentum
         j1f = int(matrix_info[i][2][-1]) / 2
         j2f = int(matrix_info[i][3][-1]) / 2
         j1i = int(matrix_info[i][4][-1]) / 2
@@ -517,3 +520,33 @@ class J2operator(FermiHubbardHamiltonian):
         j2=psi.transpose().dot(self.j2_operator.dot(psi))
         jvalue=0.5 * ( np.sqrt(4.0 * j2 + 1) - 1 )
         return jvalue
+    
+    
+
+
+class QuadrupoleOperator(FermiHubbardHamiltonian):
+    
+    def __init__(self, size_a, size_b, nparticles_a, nparticles_b, symmetries = None):
+        super().__init__(size_a, size_b, nparticles_a, nparticles_b, symmetries)
+        
+        
+    def __load_quadrupole_matrix(self,):
+        
+        self.quadrupole_reduced_matrix_dictionary={}
+        
+        # nlj_a nlj_b structure
+        self.quadrupole_reduced_matrix_dictionary[(0,1,3/2),(0,1,3/2)]=-1.410
+        self.quadrupole_reduced_matrix_dictionary[(0,1,3/2),(0,1,1/2)]=-1.410
+        self.quadrupole_reduced_matrix_dictionary[(0,1,1/2),(0,1,3/2)]=1.410
+        
+        self.quadrupole_reduced_matrix_dictionary[(0,2,5/2),(0,2,5/2)]=-2.585
+        self.quadrupole_reduced_matrix_dictionary[(0,1,1/2),(0,0,1/2)]=1.410
+        self.quadrupole_reduced_matrix_dictionary[(0,1,1/2),(0,1,3/2)]=1.410
+        self.quadrupole_reduced_matrix_dictionary[(0,1,1/2),(0,1,3/2)]=1.410
+        self.quadrupole_reduced_matrix_dictionary[(0,1,1/2),(0,1,3/2)]=1.410
+        self.quadrupole_reduced_matrix_dictionary[(0,1,1/2),(0,1,3/2)]=1.410
+        self.quadrupole_reduced_matrix_dictionary[(0,1,1/2),(0,1,3/2)]=1.410
+        self.quadrupole_reduced_matrix_dictionary[(0,1,1/2),(0,1,3/2)]=1.410
+        
+        
+        

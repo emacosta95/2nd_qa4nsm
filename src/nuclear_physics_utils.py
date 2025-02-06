@@ -467,7 +467,10 @@ def write_j_square_twobody_file(filename:str):
         
     fileJ2=open(filename+'_j2','w')
     fileJ2.write('   J^2 ' + title )
-    fileJ2.write('%i %i %s %s \n'  % (1, len(states), states[0], states[1]))
+    fileJ2.write('%i %i '  % (1, len(states)))
+    for state in states:
+        fileJ2.write('%s '% state)
+    fileJ2.write('\n')
     fileJ2.write('0. 0. 0. \n')
     fileJ2.write('0. 0. 0. \n')
     for a in range(singleparticlestate_number):

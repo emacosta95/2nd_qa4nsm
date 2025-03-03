@@ -538,7 +538,7 @@ class QuadrupoleOperator(FermiHubbardHamiltonian):
         self.single_particle_basis=single_particle_basis
         
         self.__load_quadrupole_matrix()
-        self.__get_manybody_operator()
+        self.__get_manybody_operator(symmetries=symmetries)
         
     def __load_quadrupole_matrix(self,):
         
@@ -566,8 +566,8 @@ class QuadrupoleOperator(FermiHubbardHamiltonian):
         state_encoding=self.single_particle_basis
         
         self.quadrupole_matrix={}
-        for a,idx_a in enumerate(state_encoding):
-            for b,idx_b in enumerate(state_encoding):
+        for idx_a,a in enumerate(state_encoding):
+            for idx_b,b in enumerate(state_encoding):
                 na,la,ja,ma,ta,tza=a
                 nb,lb,jb,mb,tb,tzb=b
                 
@@ -575,11 +575,16 @@ class QuadrupoleOperator(FermiHubbardHamiltonian):
                 # get the Clebasch Gordan coefficient related to the transition a-b
                 # (we have to double check if the W-E theorem returns the order of the variables
                 # in the C-G in this way)
-                cg_term_j=ClebschGordan(j1=jb,j2=2,J=ja)
-                cg_value=SelectCG(cg_term_j,j1=jb,m1=mb,j2=2,m2=mu,J=ja,M=ma)
+                if ja > np.abs(jb-2) and ja < np.abs(jb+2):
+                    cg_term_j=ClebschGordan(j1=jb,j2=2,J=ja)
+                    cg_value=SelectCG(cg_term_j,j1=jb,m1=mb,j2=2,m2=mu,J=ja,M=ma)
+                else:
+                    cg_value=0.
                 
+                    
                 if tza==tzb:
-                    quadrupole_value= self.quadrupole_reduced_matrix_dictionary[(na,la,ja),(nb,lb,jb)]*cg_value/np.sqrt(2*ja+1)
+                    if ((na,la,ja),(nb,lb,jb)) in self.quadrupole_reduced_matrix_dictionary.keys():
+                        quadrupole_value= self.quadrupole_reduced_matrix_dictionary[(na,la,ja),(nb,lb,jb)]*cg_value/np.sqrt(2*ja+1)
                 else:
                     quadrupole_value=0.
                 
@@ -587,6 +592,8 @@ class QuadrupoleOperator(FermiHubbardHamiltonian):
                     continue
                 else:
                     self.quadrupole_matrix[(idx_a,idx_b)]=quadrupole_value
+                    
+            
                 
     def __get_manybody_operator(self,symmetries:List):
         
@@ -595,7 +602,8 @@ class QuadrupoleOperator(FermiHubbardHamiltonian):
         mus=[-2,-1,0,1,2]
         
         for mu in mus:
-            self.quadrupole_matrices[mu]=self.__get_the_quadrupole_matrix(mu=mu)
+            self.__get_the_quadrupole_matrix(mu=mu)
+            self.quadrupole_matrices[mu]=self.quadrupole_matrix
             
             qab=0.
             for a in range(self.size_a+self.size_b):
@@ -606,10 +614,22 @@ class QuadrupoleOperator(FermiHubbardHamiltonian):
                         if symmetries is not None:
                             idxs=[a,b]
                             for sym in symmetries:
+                                print('symmetriesss')
                                 cond=sym(idxs)
                                 full_cond=cond*full_cond
+                                print(full_cond,idxs)
                         if full_cond:
+                            print('a,b,values',self.single_particle_basis[a],self.single_particle_basis[b])
                             qab+=self.quadrupole_matrices[mu][(a,b)]*self.adag_a_matrix(i=a,j=b)
             self.quadrupole_matrix[mu]=qab
             
     
+    def deformation_value(self,psi:np.ndarray):
+        
+        tot_value=0.
+        for op in self.quadrupole_operator.items():
+            value=psi.transpose().conjugate().dot(op.dot(psi))
+            tot_value+=value**2
+            
+        return np.sqrt(tot_value)
+            

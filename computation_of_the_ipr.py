@@ -68,9 +68,9 @@ entropy_proton_neutron_list=[]
 entropy_initial_rest_list=[]
 spectrum_list=[]
 
-for i in range(len(titles)):
-    nparticles_a,nparticles_b=nparts[i]
-    title=titles[i]
+for r in range(len(titles)):
+    nparticles_a,nparticles_b=nparts[r]
+    title=titles[r]
     J2cki=J2operator(size_a=size_a,size_b=size_b,nparticles_a=nparticles_a,nparticles_b=nparticles_b,single_particle_states=SPS.state_encoding,j_square_filename=j_square_filename,symmetries=[SPS.total_M_zero])
 
 
@@ -254,8 +254,8 @@ for i in range(len(titles)):
 
         fidelity=degenerate_fidelity        
         fidelity_t.append(fidelity)
-        print([i for i in range(size_a)])
-        entropy_proton_neutron.append(TargetHamiltonian.entanglement_entropy(indices=[i for i in range(size_a)],psi=psi))
+        
+        entropy_proton_neutron.append(TargetHamiltonian.entanglement_entropy(indices=[q for q in range(size_a)],psi=psi))
         entropy_initial_rest.append(TargetHamiltonian.entanglement_entropy(indices=np.nonzero(min_b)[0],psi=psi))
     eng_t=np.asarray(eng_t)
     fidelity_t=np.asarray(fidelity_t)

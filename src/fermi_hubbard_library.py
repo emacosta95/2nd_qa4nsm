@@ -411,7 +411,6 @@ class FemionicBasis:
     def entanglement_entropy(self,indices:List,psi:np.ndarray):
         
         rho=self.reduced_state(indices=indices,psi=psi)
-        print('rho check=',rho.trace(),rho.shape)
         lambd, _ = np.linalg.eigh(rho)
         s = -1 * np.sum(np.log(lambd + 10**-20) * lambd)
         return s

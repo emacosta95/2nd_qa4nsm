@@ -51,6 +51,7 @@ class FermiHubbardHamiltonian(FemionicBasis):
         for element in adj_matrix.items():
 
             (i, j), value = element
+            print('value=',value,'i,j=',i,j)
             operator = operator + value * self.adag_a_matrix(i=i, j=j)
 
         self.kinetic_operator = operator #+ operator.transpose().conjugate()

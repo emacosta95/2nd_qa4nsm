@@ -83,10 +83,31 @@ class Schedule:
             
             else:
                 return h_driver,h_target
+            
+        else:
+            h_driver=(self.time/self.tf)*(1+np.average(matrix_driver,axis=0))
+            h_target=(self.time/self.tf)*(1+np.average(matrix_target,axis=0))
+            if self.number_target_hamiltonian==2:
+                h_target_2=(self.time/self.tf)*(1+np.average(matrix_target_2,axis=0))
 
-  
+        
+                return h_driver,h_target,h_target_2
+
+
+    def load(self,parameters:np.ndarray):
+        
+        if parameters.shape[0]==self.parameters.shape[0]:
+            self.parameters=parameters
+        else:
+            print('Mbare ma ri unni cachi ca ie tuttu reshapeato! \n')
+            exit()
+            
+        
 class SchedulerModel(Schedule):    
-    def __init__(self,initial_state:np.ndarray,target_hamiltonian: scipy.sparse.spmatrix,initial_hamiltonian: scipy.sparse.spmatrix,reference_hamiltonian:scipy.sparse.spmatrix,tf:float,number_of_parameters:int,nsteps:int,type:str,seed:int,mode:Optional[str]='annealing ansatz',second_target_hamiltonian:Optional[scipy.sparse.spmatrix]=None,random:Optional[bool]=False,mean_field_target_hamiltonain:Optional[scipy.sparse.spmatrix]=None):
+    def __init__(self,initial_state:np.ndarray,target_hamiltonian: scipy.sparse.spmatrix,initial_hamiltonian: scipy.sparse.spmatrix,reference_hamiltonian:scipy.sparse.spmatrix,tf:float,number_of_parameters:int,nsteps:int,type:str,seed:int,mode:Optional[str]='annealing ansatz',second_target_hamiltonian:Optional[scipy.sparse.spmatrix]=None,random:Optional[bool]=False,mean_field_target_hamiltonain:Optional[scipy.sparse.spmatrix]=None,J2operator=None):
+        
+        
+        self.J2operator=J2operator
         
         self.target_hamiltonian=target_hamiltonian
         self.initial_hamiltonian=initial_hamiltonian
@@ -122,11 +143,14 @@ class SchedulerModel(Schedule):
         
         for i,t in enumerate(self.time):
             time_hamiltonian=0.
-            hamiltonians=[self.initial_hamiltonian,self.target_hamiltonian,self.second_target_hamiltonian]
+            
+            hamiltonians=[self.initial_hamiltonian,self.target_hamiltonian]
+            if self.number_target_hamiltonian==2:
+                hamiltonians.append(self.second_target_hamiltonian)
             for r,driver in enumerate(self.get_driving()):
                 time_hamiltonian+=driver[i]*hamiltonians[r]
             if self.mean_field_target_hamiltonian is not(None):
-                time_hamiltonian+=(1-driver[0])*self.mean_field_target_hamiltonian
+                time_hamiltonian+=(1-t/self.tf)*self.mean_field_target_hamiltonian
             psi=expm_multiply(-1j*dt*time_hamiltonian,psi)
 
         self.energy=psi.conjugate().transpose().dot(self.reference_hamiltonian.dot(psi))
@@ -162,6 +186,8 @@ class SchedulerModel(Schedule):
         self.history_drivings.append(self.get_driving())
         self.history_psi.append(self.psi)
         self.history_run.append(self.run_number)
+        if self.J2operator is not(None):
+            print('j_value of psi=',self.J2operator.j_value(self.psi))
         print(self.energy)
         
         

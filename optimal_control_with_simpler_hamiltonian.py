@@ -24,9 +24,23 @@ parser = argparse.ArgumentParser()
 
 
 parser.add_argument(
+    "--load",
+    type=bool,
+    help="Loading or not the model",
+    action=argparse.BooleanOptionalAction,
+)
+
+parser.add_argument(
     "--filename",
     type=str,
     help="name of the file with the nuclear potential entries.",
+
+)
+
+parser.add_argument(
+    "--load_filename",
+    type=str,
+    help="name of the file with the saved parameters of a different model (for transfer learning).",
 
 )
 
@@ -179,23 +193,35 @@ matrix_pairing,_=get_twobody_nuclearshell_model(file_name=pairing_filename)
 PPoperator=FermiHubbardHamiltonian(size_a=size_a,size_b=size_b,nparticles_a=nparticles_a,nparticles_b=nparticles_b,symmetries=[SPS.total_M_zero])
 PPoperator.get_twobody_interaction(twobody_dict=matrix_pairing)
 PPoperator.get_hamiltonian()
-mean_field_hamiltonian=diags(TargetHamiltonian.hamiltonian.diagonal(), format='csr')
+
+MeanFieldHamiltonian=FermiHubbardHamiltonian(size_a=size_a,size_b=size_b,nparticles_a=nparticles_a,nparticles_b=nparticles_b,symmetries=[SPS.total_M_zero])
+MeanFieldHamiltonian.get_external_potential(energies)
+MeanFieldHamiltonian.get_hamiltonian()
+
+print(MeanFieldHamiltonian.hamiltonian)
 
 
-simpler_target_hamiltonian=(mean_field_hamiltonian+pairing_coupling*PPoperator.hamiltonian+quadrupole_coupling*QQoperator.hamiltonian)
+
+
+simpler_target_hamiltonian=(MeanFieldHamiltonian.hamiltonian+pairing_coupling*PPoperator.hamiltonian+quadrupole_coupling*QQoperator.hamiltonian)
 
 eigenvalues,eigenstates=eigh(simpler_target_hamiltonian.todense())
+
+
+
+J2pshell=J2operator(size_a=size_a,size_b=size_b,nparticles_a=nparticles_a,nparticles_b=nparticles_b,single_particle_states=SPS.state_encoding,j_square_filename=j_square_filename,symmetries=[SPS.total_M_zero])
 
 
 
 #### Initial Hamiltonian
 min_b=np.zeros(size_a+size_b)
 
+#### PROVISIONAL
 if file_name=='data/cki':
-    order_of_filling=np.asarray([0,3,1,2,4,5])
+    order_of_filling=np.asarray([4,5])
     order_of_filling_protons=order_of_filling+size_a
 else:
-    order_of_filling=np.asarray([0,5,1,4,2,3,6,7,8,11,9,10])
+    order_of_filling=np.asarray([6,7])
     order_of_filling_protons=order_of_filling+size_a
 
 
@@ -219,7 +245,12 @@ InitialHamiltonian.get_hamiltonian()
 
 #### Optimization
 
-model=SchedulerModel(initial_state=psi_configuration,target_hamiltonian=mean_field_hamiltonian+PPoperator.hamiltonian,initial_hamiltonian=InitialHamiltonian.hamiltonian,second_target_hamiltonian=QQoperator.hamiltonian,tf=tf,nsteps=nsteps,number_of_parameters=number_of_parameters,type='fourier',seed=42,reference_hamiltonian=TargetHamiltonian.hamiltonian,mode='annealing ansatz')
+model=SchedulerModel(initial_state=psi_configuration,target_hamiltonian=PPoperator.hamiltonian,initial_hamiltonian=InitialHamiltonian.hamiltonian,second_target_hamiltonian=QQoperator.hamiltonian,mean_field_target_hamiltonain=MeanFieldHamiltonian.hamiltonian,tf=tf,nsteps=nsteps,number_of_parameters=number_of_parameters,type='F-CRAB',seed=42,reference_hamiltonian=TargetHamiltonian.hamiltonian,mode='annealing ansatz',J2operator=J2pshell)
+
+if args.load:
+    data=np.load(args.load_filename,allow_pickle=True)
+    load_parameters=data['history_parameters'][-1]
+    model.load(parameters=load_parameters)
 
 
 res = minimize(

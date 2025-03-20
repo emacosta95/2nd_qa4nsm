@@ -491,6 +491,7 @@ class J2operator(FermiHubbardHamiltonian):
         
     def __get_twobody_matrix(self,j_square_filename:str):
         matrix_j,_=get_twobody_nuclearshell_model(file_name=j_square_filename)
+        self.twobody_dictionary=matrix_j
         self.get_twobody_interaction(twobody_dict=matrix_j)    
         
     def j2_operator(self):

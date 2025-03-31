@@ -1,3 +1,4 @@
 data/nuclear_twobody_matrix
 data/quantum_chemistry
+data/effective_hamiltonian_method
 *.txt

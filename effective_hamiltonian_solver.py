@@ -11,21 +11,19 @@ from src.qml_utils.utils import configuration
 from scipy.sparse.linalg import eigsh,expm_multiply
 from tqdm import trange
 import matplotlib.pyplot as plt
-from src.utils_quasiparticle_approximation import QuasiParticlesConverter
+from src.utils_quasiparticle_approximation import QuasiParticlesConverterOnlynnpp
 file_name='data/usdb.nat'
-qq_filename='data/qq.sd'
-pp_filename='data/pair_inter.sd'
 SPS=SingleParticleState(file_name=file_name)
 
 
 nparticles_a=6
-nparticles_b=6
+nparticles_b=10
 
 size_a=SPS.energies.shape[0]//2
 size_b=SPS.energies.shape[0]//2
 
-title=r'$^{28}$Si'
-filename='28Si'
+title=r'$^{32}$Ar'
+filename='32Ar'
 
 # compute the NSM Hamiltonian
 NSMHamiltonian=FermiHubbardHamiltonian(size_a=size_a,size_b=size_b,nparticles_a=nparticles_a,nparticles_b=nparticles_b,symmetries=[SPS.total_M_zero])
@@ -46,7 +44,7 @@ print(egs)
 print('total_m=',SPS.compute_m_exp_value(psi=psi0,basis=NSMHamiltonian.basis))
 
 
-QPC=QuasiParticlesConverter()
+QPC=QuasiParticlesConverterOnlynnpp()
 
 QPC.initialize_shell(state_encoding=SPS.state_encoding)
 
@@ -75,13 +73,15 @@ approximations=[]
 single_term = hamiltonian_rq  # Start with initial term
 
 delta_e_step=1000
-e_old=1000
+delta_delta_e_step=1000
+delta_e_step_old=1000
+e_old=100
 i=0
 approximations=[]
 history_errors_exact=[]
 history_energy=[]
 history_psi=[]
-while(delta_e_step>10**-4):
+while((delta_e_step>10**-3) and (delta_delta_e_step>0)):
     
     if i > 0:
         single_term = hamiltonian_rr @ single_term  # Efficient update
@@ -95,16 +95,21 @@ while(delta_e_step>10**-4):
     print(e)
     print(np.abs((e-egs[0])/egs[0]),'index=',i)
     print('delta e=',delta_e_step)
+    
     history_errors_exact.append(np.abs((e-egs[0])/egs[0]))
     history_energy.append(e)
     history_psi.append(psi[:,0])
+    
     delta_e_step=np.abs(e_old-e)
+    delta_delta_e_step=delta_e_step_old-delta_e_step
+    delta_e_step_old=delta_e_step.copy()
+    print('delta_delta_e=',delta_delta_e_step,'\n')
     e_old=e
     i+=1
     print(i)
     if i>1000:
-        np.savez('data/effective_hamiltonian_method_'+filename,energy=history_energy,psi=history_psi,errors=history_errors_exact,final_effective_hamiltonian=tot_hamiltonian,title=title)
+        np.savez('data/effective_hamiltonian_method_larger_reduction/effective_hamiltonian_method_'+filename,energy=history_energy,psi=history_psi,errors=history_errors_exact,final_effective_hamiltonian=tot_hamiltonian,title=title)
         exit()
 
 
-np.savez('data/effective_hamiltonian_method_'+filename,energy=history_energy,psi=history_psi,errors=history_errors_exact,final_effective_hamiltonian=tot_hamiltonian,title=title)
+np.savez('data/effective_hamiltonian_method_larger_reduction/effective_hamiltonian_method_'+filename,energy=history_energy,psi=history_psi,errors=history_errors_exact,final_effective_hamiltonian=tot_hamiltonian,title=title)

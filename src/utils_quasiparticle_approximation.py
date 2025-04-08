@@ -160,13 +160,13 @@ class QuasiParticlesConverterOnlynnpp():
         self.rest_basis=[]
         
         for i,b in enumerate(basis):
-            qp_base=self.new_base_computation(base=b)
+            qp_base=self.new_base_computation(base=b.copy())
             
             if qp_base is not(None):
 
                 self.quasiparticle_basis.append(qp_base)
             else:
-                self.rest_basis.append(b)
+                self.rest_basis.append(b.copy())
         self.quasiparticle_basis=np.asarray(self.quasiparticle_basis)
         self.rest_basis=np.asarray(self.rest_basis)
         
@@ -175,7 +175,7 @@ class QuasiParticlesConverterOnlynnpp():
         qp_idx=0
         rest_idx=0
         for i,b in enumerate(basis):
-            qp_base=self.new_base_computation(base=b)
+            qp_base=self.new_base_computation(base=b.copy())
             
             if qp_base is not(None):
                 self.particles2quasiparticles[qp_idx,i]=1.

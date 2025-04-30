@@ -12,18 +12,23 @@ from scipy.sparse.linalg import eigsh,expm_multiply
 from tqdm import trange
 import matplotlib.pyplot as plt
 from src.utils_quasiparticle_approximation import QuasiParticlesConverterOnlynnpp
+from cupyx.scipy.sparse import csr_matrix as cp_csr_matrix
+from cupyx.scipy.sparse.linalg import eigsh as eigsh_cp
+import cupyx.scipy.sparse as cusparse
+
 file_name='data/usdb.nat'
 SPS=SingleParticleState(file_name=file_name)
 
+gpu_condition=False
 
 nparticles_a=6
-nparticles_b=10
+nparticles_b=4
 
 size_a=SPS.energies.shape[0]//2
 size_b=SPS.energies.shape[0]//2
 
-title=r'$^{32}$Ar'
-filename='32Ar'
+title=r'$^{26}$Mg'
+filename='26Mg'
 
 # compute the NSM Hamiltonian
 NSMHamiltonian=FermiHubbardHamiltonian(size_a=size_a,size_b=size_b,nparticles_a=nparticles_a,nparticles_b=nparticles_b,symmetries=[SPS.total_M_zero])
@@ -65,12 +70,24 @@ hamiltonian_rr=QPC.particles2restofstates @ NSMHamiltonian.hamiltonian @ QPC.par
 hamiltonian_qr=QPC.particles2quasiparticles @ NSMHamiltonian.hamiltonian @ QPC.particles2restofstates.T
 hamiltonian_rq=QPC.particles2restofstates @ NSMHamiltonian.hamiltonian @ QPC.particles2quasiparticles.T
 
+### convert for the gpu
+if gpu_condition:
+    hamiltonian_qq=cp_csr_matrix(hamiltonian_qq)
+    hamiltonian_rr=cp_csr_matrix(hamiltonian_rr)
+    hamiltonian_rq=cp_csr_matrix(hamiltonian_rq)
+    hamiltonian_qr=cp_csr_matrix(hamiltonian_qr)
+
 tot_hamiltonian=hamiltonian_qq
-values,psi=eigsh(hamiltonian_qq,k=1)
-e=values[0]
+
+if gpu_condition:
+    values,psi=eigsh_cp(hamiltonian_qq,k=1)
+    e=values[0].get()
+else:
+    values,psi=eigsh(hamiltonian_qq,k=1)
+    e=values[0]
 approximations=[]
 
-single_term = hamiltonian_rq  # Start with initial term
+single_term = hamiltonian_rq # Start with initial term
 
 delta_e_step=1000
 delta_delta_e_step=1000
@@ -81,17 +98,34 @@ approximations=[]
 history_errors_exact=[]
 history_energy=[]
 history_psi=[]
-while((delta_e_step>10**-3) and (delta_delta_e_step>0)):
+
+
+
+while( (delta_e_step>10**-3) and delta_delta_e_step>0.) :
     
-    if i > 0:
-        single_term = hamiltonian_rr @ single_term  # Efficient update
-    approximations.append(hamiltonian_qr @ single_term)  # Store result
+    if not(gpu_condition):
+        if i > 0:
+            single_term = (hamiltonian_rr) @ single_term  # Efficient update
+        approximations.append( hamiltonian_qr @ single_term)  # Store result in the cpu
+        tot_hamiltonian=hamiltonian_qq
+        for j in range(i):
+            tot_hamiltonian=tot_hamiltonian+approximations[j]/e**(j+1)
+    else:
+        tot_hamiltonian=hamiltonian_qq
+        op=hamiltonian_rq
+        for j in range(i):
+            if j>0:
+                op=hamiltonian_rr/e @ op
+            tot_hamiltonian+=hamiltonian_qr @ op/e
     
-    tot_hamiltonian=hamiltonian_qq
-    for j in range(i):
-        tot_hamiltonian=tot_hamiltonian+approximations[j]/e**(j+1)
-    values,psi=eigsh(tot_hamiltonian,k=1)
-    e=values[0]
+    if gpu_condition:
+        values,psi=eigsh_cp(cp_csr_matrix(tot_hamiltonian),k=1)
+        e=values[0].get()
+        psi=psi.get()
+    else:
+        values,psi=eigsh(tot_hamiltonian,k=1)
+        e=values[0]
+        
     print(e)
     print(np.abs((e-egs[0])/egs[0]),'index=',i)
     print('delta e=',delta_e_step)

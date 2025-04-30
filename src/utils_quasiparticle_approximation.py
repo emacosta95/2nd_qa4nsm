@@ -24,7 +24,7 @@ from scipy.sparse.linalg import  lobpcg
 from itertools import product
 import multiprocessing
 from tqdm import tqdm, trange
-
+from scipy.sparse import identity
 class QuasiParticlesConverter():
     
     def __init__(self,):
@@ -118,6 +118,7 @@ class QuasiParticlesConverterOnlynnpp():
         
         #### nn and pp
         couples=[]
+        phases=[]
         for a,state_a in enumerate(state_encoding):
             for b,state_b in enumerate(state_encoding):
                 
@@ -126,9 +127,10 @@ class QuasiParticlesConverterOnlynnpp():
                     _,_,jb,mb,_,tzb=state_b
                     if ja==jb and ma==-mb and tza==tzb:
                         couples.append([a,b])
-                        
+                        phases.append((-1)**(ja-np.abs(ma)))        
 
         self.couples=couples
+        self.phases=phases
 
 
 
@@ -183,7 +185,97 @@ class QuasiParticlesConverterOnlynnpp():
             else:
                 self.particles2restofstates[rest_idx,i]=1
                 rest_idx+=1
- 
+                
+    def phase_state_converter(self,psi:np.ndarray):
+        new_psi=np.zeros_like(psi)
+        for a,component in enumerate(psi):
+            indices=np.nonzero(self.quasiparticle_basis[a])[0]
+            phase_a=self.phases[indices]
+            phase=np.prod(phase_a)
+            new_psi[a]=phase*component
+            
+        new_psi=new_psi/np.linalg.norm(new_psi)
+        return new_psi
+            
+            
+
+                
+class QuasiParticlesConverterWithPhase():
+    
+    def __init__(self,):
+        pass
+    
+    def initialize_shell(self,state_encoding:List):
+        
+        #### nn and pp
+        couples=[]
+        phases=[]
+        for a,state_a in enumerate(state_encoding):
+            for b,state_b in enumerate(state_encoding):
+                
+                if b>a:
+                    _,_,ja,ma,_,tza=state_a
+                    _,_,jb,mb,_,tzb=state_b
+                    if ja==jb and ma==-mb and tza==tzb:
+                        couples.append([a,b])
+                        phases.append((-1)**(ja-np.abs(ma)))        
+
+        self.couples=couples
+        self.phases=phases
+
+
+    def new_base_computation(self,base:np.ndarray):
+        
+        indices=np.nonzero(base)[0]
+        new_base=np.zeros(len(self.couples))
+        phase_value=1.
+        value=np.sum(base)
+    
+                
+        list_of_token_indices=[]
+        for i in range(new_base.shape[0]):
+            if base[self.couples[i][0]]+base[self.couples[i][1]]!=2 :
+                continue
+            else:
+                new_base[i]+=1
+                base[self.couples[i][0]]=0
+                base[self.couples[i][1]]=0
+                phase_value*=self.phases[i]
+                
+        if np.sum(new_base)==value//2:
+            return new_base,phase_value
+        
+
+    def get_the_basis_matrix_transformation(self,basis:np.ndarray):
+        
+        self.quasiparticle_basis=[]
+        self.rest_basis=[]
+        
+        for i,b in enumerate(basis):
+            items=self.new_base_computation(base=b.copy())
+            if items is not(None):
+                qp_base,phase_value=items
+                self.quasiparticle_basis.append(qp_base)
+            else:
+                self.rest_basis.append(b.copy())
+        self.quasiparticle_basis=np.asarray(self.quasiparticle_basis)
+        self.rest_basis=np.asarray(self.rest_basis)
+        
+        self.particles2quasiparticles=lil_matrix((self.quasiparticle_basis.shape[0],basis.shape[0]))
+        self.particles2restofstates=lil_matrix((basis.shape[0],basis.shape[0]))
+        self.particles2quasiparticles_full_basis=lil_matrix((basis.shape[0],basis.shape[0]))
+        
+        qp_idx=0
+        rest_idx=0
+        for i,b in enumerate(basis):
+            items=self.new_base_computation(base=b.copy())
+            
+            if items is not(None):
+                qp_base,phase_value=items
+                self.particles2quasiparticles[qp_idx,i]=phase_value
+                self.particles2quasiparticles_full_basis[i,i]=phase_value
+                qp_idx+=1
+        self.particles2restofstates=identity(basis.shape[0])-self.particles2quasiparticles_full_basis
 
 class HardcoreBosonsBasis:
 

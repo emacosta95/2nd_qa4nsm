@@ -286,11 +286,15 @@ def compute_nuclear_twobody_matrix(
                         j_tot_range, i_tot_range = j_tot_i_tot[
                             (ni, li, ji), (nj, lj, jj), (nl, ll, jl), (nm, lm, jm)
                         ]
+                        
 
                         value = 0.0
                         value_j = 0.0
                         for j_tot in j_tot_range:
                             for i_tot in i_tot_range:
+                                
+                                if i==0 and j==1 and l==0 and m==1:
+                                    print('i tot j tot=',i_tot,j_tot)
                                 
                                 #phij, phlm = (-1) ** int(ji + jj + j_tot + i_tot), (-1) ** int(jl + jm + j_tot + i_tot)
 
@@ -326,6 +330,10 @@ def compute_nuclear_twobody_matrix(
                                         i_tot,
                                     )
                                 ]
+                                
+                                if i==0 and j==1 and l==0 and m==1:
+                                    print('ji,mi,jj,mj,jtot,mtot=',ji, mi, jj, mj, j_tot, mi+mj)
+                                    
 
                                 cg_initial = SelectCG(
                                     cg_initial_list,
@@ -357,9 +365,13 @@ def compute_nuclear_twobody_matrix(
                                     i_tot,
                                     izi+izj,
                                 )
-
+                                if i==0 and j==1 and l==0 and m==1:
+                                    print('jtot=',j_tot,'i_tot=',i_tot)
+                                    print('nlj',ni,li,ji,nj,lj,jj)
+                                    print('nlj',nl,ll,jl,nm,lm,jm,'\n')
                                 phaseJT = (-1.0) ** (j_tot + i_tot)
                                 # normalization
+
                                 nij = np.sqrt(
                                     1.0
                                     - krond((ni, li, ji), (nj, lj, jj))
@@ -370,10 +382,12 @@ def compute_nuclear_twobody_matrix(
                                     - krond((nl, ll, jl), (nm, lm, jm))
                                     * phaseJT
                                 ) / (1.0 + krond((nl, ll, jl), (nm, lm, jm)))
-
+                                if i==0 and j==1 and l==0 and m==1:
+                                    print('norm_ij=',nij)
+                                    print('norm lm',nlm)
                                 if (abs(nij) == 0.0) or (abs(nlm) == 0.0):
                                     continue
-
+                                
                                 value = (
                                     value
                                     + cg_initial
@@ -383,6 +397,9 @@ def compute_nuclear_twobody_matrix(
                                     * matrix_outcome
                                     / (nij * nlm)
                                 )
+                                
+
+
 
 
                         if value != 0:

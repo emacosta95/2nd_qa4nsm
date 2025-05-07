@@ -22,13 +22,13 @@ SPS=SingleParticleState(file_name=file_name)
 gpu_condition=False
 
 nparticles_a=6
-nparticles_b=4
+nparticles_b=2
 
 size_a=SPS.energies.shape[0]//2
 size_b=SPS.energies.shape[0]//2
 
-title=r'$^{26}$Mg'
-filename='26Mg'
+title=r'$^{24}$Ne'
+filename='24Ne'
 
 # compute the NSM Hamiltonian
 NSMHamiltonian=FermiHubbardHamiltonian(size_a=size_a,size_b=size_b,nparticles_a=nparticles_a,nparticles_b=nparticles_b,symmetries=[SPS.total_M_zero])

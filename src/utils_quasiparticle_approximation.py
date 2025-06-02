@@ -302,10 +302,10 @@ class HardcoreBosonsBasis:
             if self.basis[index, j] != 0:
                 new_basis = self.basis[index].copy()
                 new_basis[j] = self.basis[index, j] - 1
-                phase_j = np.sum(new_basis[0:j])
+                #phase_j = np.sum(new_basis[0:j])
                 if new_basis[i] != 1:
                     new_basis[i] = new_basis[i] + 1
-                    phase_i = np.sum(new_basis[0:i])
+                    #phase_i = np.sum(new_basis[0:i])
                     value=(np.einsum('i,ai->a',new_basis,self.basis))
                     value[value!=self.nparticles]=0
 

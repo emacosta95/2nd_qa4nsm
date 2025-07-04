@@ -3,7 +3,6 @@ from itertools import combinations
 from src.hamiltonian_utils import FermiHubbardHamiltonian
 from src.nuclear_physics_utils import get_twobody_nuclearshell_model,SingleParticleState,QuadrupoleOperator,J2operator
 import numpy as np
-import torch
 from typing import Dict
 import scipy
 from src.qml_models import AdaptVQEFermiHubbard

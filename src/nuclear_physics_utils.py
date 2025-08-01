@@ -33,7 +33,7 @@ class SingleParticleState:
             for i, label in enumerate(labels[2:]):
                 n = int(label[1])
                 l = int(label[0])
-                two_j = int(label[-1])
+                two_j = int(label[-2:])
                 two_m_range = -1 * two_j + np.arange(0, 2 * two_j + 2, 2)
                 # we put the n=1 restriction
                 # if n==1 or (n==2 and two_j==3):
@@ -161,10 +161,10 @@ def scattering_matrix_reader(file_name: str) -> Tuple[Dict]:
         l2i = int(matrix_info[i][5][0])
 
         # total angular momentum
-        j1f = int(matrix_info[i][2][-1]) / 2
-        j2f = int(matrix_info[i][3][-1]) / 2
-        j1i = int(matrix_info[i][4][-1]) / 2
-        j2i = int(matrix_info[i][5][-1]) / 2
+        j1f = int(matrix_info[i][2][-2:]) / 2
+        j2f = int(matrix_info[i][3][-2:]) / 2
+        j1i = int(matrix_info[i][4][-2:]) / 2
+        j2i = int(matrix_info[i][5][-2:]) / 2
 
         j_tot_i_tot[
             (n1f, l1f, j1f), (n2f, l2f, j2f), (n1i, l1i, j1i), (n2i, l2i, j2i)

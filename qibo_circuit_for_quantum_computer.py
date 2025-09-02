@@ -4,7 +4,7 @@ from qibo import Circuit, gates
 import numpy as np
 from src.qibo_utils import load_gate_list, build_qibo_circuit_from_gate_list
 from qibo.gates import M
-
+import pickle
 
 ql.logger.setLevel(40)  # Set qililab's logger to a higher level so it only shows error messages
 
@@ -16,13 +16,6 @@ gate_list = load_gate_list("data/qa_circuit_2.json")
 
 qibo_circuit = build_qibo_circuit_from_gate_list(gate_list, n_qubits=3)
 
-
-
-set_backend("qibojit")
-backend = get_backend()  # retrieves the backend object
-# Copy your circuit to avoid modifying the original
-meas_circuit = qibo_circuit.copy()
-
 # Measure in Z, X, Y basis
 basis_gates = {
     "Z": [],  # Z basis is just standard measurement
@@ -32,18 +25,14 @@ basis_gates = {
 
 shots = 5000
 results = {}
-
+circuits=[]
 for basis, rotations in basis_gates.items():
-    circuit = meas_circuit.copy()
+    circuit = qibo_circuit.copy()
     for gate in rotations:
         circuit.add(gate)
     nqubits = circuit.nqubits
     circuit.add(M(*range(nqubits)))
-    result = circuit(nshots=shots)
-    results[basis] = result
-
-# Circuit 1
-
+    circuits.append(circuit)
 
 # Circuit 2
 circuit_2 = Circuit(2)
@@ -55,11 +44,16 @@ platform.turn_on_instruments()
 platform.initial_setup()
 
 # Execute
-result = platform.execute(circuit, num_bins=100)
-result_2 = platform.execute(circuit_2, num_bins=100)
+# Execute & store
+for basis, circuit in zip(basis_gates.keys(), circuits):
+    result = platform.execute(circuit, shots=shots)
+    results[basis] = result  # keep in dict
+    print(basis, result.counts())
+
+# Save all results in one file
+with open("results.pkl", "wb") as f:
+    pickle.dump(results, f)
+
 
 ## IMPORTANT: Disconnect
 platform.disconnect()
-
-print(result.counts())
-print(result_2.counts())

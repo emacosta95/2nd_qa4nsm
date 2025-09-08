@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=quantum_job
 #SBATCH --account=ub221021
-#SBATCH --qos=Qblue
+#SBATCH --qos=bl_short
 #SBATCH --time=00:10:00
 #SBATCH --output=quantum_%j.out
 #SBATCH --error=quantum_%j.err

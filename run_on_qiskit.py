@@ -130,3 +130,4 @@ with open("histogram_y.json", "w") as f:
     json.dump(hist_y, f, indent=4)
 
 print("Histograms saved to histogram_{z,x,y}.json")
+

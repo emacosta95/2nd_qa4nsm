@@ -24,7 +24,7 @@ from src.qiskit_utils import get_hamiltonian
 hamiltonian_q = get_hamiltonian(t_onebody, n_qubits)
 
 # Driver Hamiltonian
-coupling_term = -18.4321
+coupling_term = -8.4321
 Z_tuples = [("Z", [0], -0.5*coupling_term)]
 I_tuples = [('I', [0], 0.5*coupling_term)]
 hamiltonian_driver = SparsePauliOp.from_sparse_list([*Z_tuples, *I_tuples], num_qubits=n_qubits)

@@ -85,22 +85,34 @@ estimator.options.resilience.measure_noise_learning.shots_per_randomization = 10
 # )
 
 from qiskit.transpiler import generate_preset_pass_manager
- 
+
 pm = generate_preset_pass_manager(optimization_level=3, backend=backend)
 isa_circuit = pm.run(circuit_time_evolution)
-isa_observable = hamiltonian_q[0].apply_layout(isa_circuit.layout)
 print(f">>> Circuit ops (ISA): {isa_circuit.count_ops()}")
 
+hamiltonian_terms=[]
+energies=[]
+errors=[]
 
-# Run the estimator: compute ⟨ψ|H|ψ⟩
-job = estimator.run(
-    [(isa_circuit, isa_observable)],
-)
-result = job.result()
+for hamiltonian_term in hamiltonian_q:
 
-energy = result[0].data.evs  # Expectation value of the Hamiltonian
-energy_err = result[0].data.stds  # Standard deviation (if available)
+    isa_observable = hamiltonian_q[0].apply_layout(isa_circuit.layout)
 
-print(f"\nEstimated energy ⟨H⟩ = {energy:.6f} ± {energy_err:.6f}")
 
+
+    # Run the estimator: compute ⟨ψ|H|ψ⟩
+    job = estimator.run(
+        [(isa_circuit, isa_observable)],
+    )
+    result = job.result()
+
+    energy = result[0].data.evs  # Expectation value of the Hamiltonian
+    energy_err = result[0].data.stds  # Standard deviation (if available)
+
+    print(f"\nEstimated energy ⟨H⟩ = {energy:.6f} ± {energy_err:.6f}")
+    hamiltonian_terms.append(hamiltonian_term)
+    energies.append(energy)
+    errors.append(errors)
+    
+np.savez('data/qiskit_circuit_energy_estimation_results',energies=energies,errors=errors,hamiltonian_terms=hamiltonian_terms)
 
